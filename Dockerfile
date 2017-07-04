@@ -6,7 +6,9 @@ EXPOSE 53/udp
 ADD package.json /tmp/package.json
 
 RUN cd /tmp && npm install
-COPY *.js /usr/src/
+COPY index.js /usr/src/
+COPY util.js /usr/src/
+COPY hosts.json /usr/src/
 
 RUN ln -sf /tmp/node_modules /usr/src/node_modules
 RUN ln -sf /tmp/package.json /usr/src/package.json

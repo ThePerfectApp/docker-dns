@@ -1,40 +1,39 @@
-var PORT = process.env.PORT || 53
-var EXTERNAL_DNS = process.env.EXTERNAL_DNS || '8.8.8.8,8.8.4.4'
+var PORT = process.env.PORT || 53;
+var EXTERNAL_DNS = process.env.EXTERNAL_DNS || '8.8.8.8,8.8.4.4';
+
+var config = require("/usr/src/hosts.json");
 
 var opts = require('rc')('dnsproxy', {
   host: '0.0.0.0',
   logging: 'dnsproxy:query',
-  domains: {
-    '.docker': '127.0.0.1',
-    '.rancher': '192.168.99.100'
-  },
+  domains: config.domains,
   fallback_timeout: 350
 })
 
-if (!opts.port) opts.port = PORT
-if (!opts.host) opts.host = '0.0.0.0'
-if (!opts.nameservers) opts.nameservers = EXTERNAL_DNS.split(',')
-if (!opts.servers) opts.servers = {}
-if (!opts.domains) opts.domains = {}
-if (!opts.hosts) opts.hosts = {}
+if (!opts.port) opts.port = PORT;
+if (!opts.host) opts.host = '0.0.0.0';
+if (!opts.nameservers) opts.nameservers = EXTERNAL_DNS.split(',');
+if (!opts.servers) opts.servers = {};
+if (!opts.domains) opts.domains = {};
+if (!opts.hosts) opts.hosts = {};
 
-process.env.DEBUG_FD = process.env.DEBUG_FD || 1
-process.env.DEBUG = process.env.DEBUG || opts.logging
-var d = process.env.DEBUG.split(',')
-d.push('dnsproxy:error')
-process.env.DEBUG = d.join(',')
+process.env.DEBUG_FD = process.env.DEBUG_FD || 1;
+process.env.DEBUG = process.env.DEBUG || opts.logging;
+var d = process.env.DEBUG.split(',');
+d.push('dnsproxy:error');
+process.env.DEBUG = d.join(',');
 
-var dgram = require('dgram')
-var packet = require('native-dns-packet')
-var util = require('./util.js')
+var dgram = require('dgram');
+var packet = require('native-dns-packet');
+var util = require('./util.js');
 
-var logdebug = require('debug')('dnsproxy:debug')
-var logquery = require('debug')('dnsproxy:query')
-var logerror = require('debug')('dnsproxy:error')
+var logdebug = require('debug')('dnsproxy:debug');
+var logquery = require('debug')('dnsproxy:query');
+var logerror = require('debug')('dnsproxy:error');
 
-logdebug('options: %j', opts)
+logdebug('options: %j', opts);
 
-var server = dgram.createSocket('udp4')
+var server = dgram.createSocket('udp4');
 
 server.on('listening', () => {
   var address = server.address();
@@ -42,57 +41,54 @@ server.on('listening', () => {
 });
 
 server.on('error', function (err) {
-  logerror('Server Error: %s', err)
-})
+  logerror('Server Error: %s', err);
+});
 
 server.on('message', function (message, rinfo) {
-  var nameserver = opts.nameservers[0]
-  var returner = false
+  var nameserver = opts.nameservers[0];
+  var returner = false;
 
-  var query = packet.parse(message)
-  var domain = query.question[0].name
-  var type = query.question[0].type
+  var query = packet.parse(message);
+  var domain = query.question[0].name;
+  var type = query.question[0].type;
 
-  logdebug('query: %j', query)
+  logdebug('query: %j', query);
 
   Object.keys(opts.hosts).forEach(function (h) {
     if (domain === h) {
-      var answer = opts.hosts[h]
+      var answer = opts.hosts[h];
       if (typeof opts.hosts[opts.hosts[h]] !== 'undefined') {
-        answer = opts.hosts[opts.hosts[h]]
+        answer = opts.hosts[opts.hosts[h]];
       }
 
-      logquery('type: host, domain: %s, answer: %s', domain, opts.hosts[h])
+      logquery('type: host, domain: %s, answer: %s', domain, opts.hosts[h]);
 
-      var res = util.createAnswer(query, answer)
-      server.send(res, 0, res.length, rinfo.port, rinfo.address)
+      var res = util.createAnswer(query, answer);
+      server.send(res, 0, res.length, rinfo.port, rinfo.address);
 
-      returner = true
+      returner = true;
     }
-  })
+  });
 
   if (returner) {
-    return
+    return;
   }
 
   Object.keys(opts.domains).forEach(function (s) {
-    var sLen = s.length
-    var dLen = domain.length
-
-    if (domain.indexOf(s) >= 0 && domain.indexOf(s) === (dLen - sLen)) {
-      var answer = opts.domains[s]
+    if (domain.match(s)) {
+      var answer = opts.domains[s];
       if (typeof opts.domains[opts.domains[s]] !== 'undefined') {
-        answer = opts.domains[opts.domains[s]]
+        answer = opts.domains[opts.domains[s]];
       }
 
-      logquery('type: server, domain: %s, answer: %s', domain, opts.domains[s])
+      logquery('type: server, domain: %s, answer: %s', domain, opts.domains[s]);
 
-      var res = util.createAnswer(query, answer)
-      server.send(res, 0, res.length, rinfo.port, rinfo.address)
+      var res = util.createAnswer(query, answer);
+      server.send(res, 0, res.length, rinfo.port, rinfo.address);
 
-      returner = true
+      returner = true;
     }
-  })
+  });
 
   if (returner) {
     return
