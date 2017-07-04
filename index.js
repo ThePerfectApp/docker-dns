@@ -1,18 +1,20 @@
-var PORT = process.env.PORT || 53;
-var EXTERNAL_DNS = process.env.EXTERNAL_DNS || '8.8.8.8,8.8.4.4';
+var config = require("/usr/src/config.json");
 
-var config = require("/usr/src/hosts.json");
+// Make some values fall back to default values if they are not valid
+config.fallback_timeout = config.fallback_timeout || 350;
+config.domains = config.domains || {};
+config.external_dns = config.external_dns || ["8.8.4.4"];
 
 var opts = require('rc')('dnsproxy', {
   host: '0.0.0.0',
   logging: 'dnsproxy:query',
   domains: config.domains,
-  fallback_timeout: 350
+  fallback_timeout: config.fallback_timeout
 })
 
-if (!opts.port) opts.port = PORT;
+if (!opts.port) opts.port = config.port || 53;
 if (!opts.host) opts.host = '0.0.0.0';
-if (!opts.nameservers) opts.nameservers = EXTERNAL_DNS.split(',');
+if (!opts.nameservers) opts.nameservers = config.external_dns;
 if (!opts.servers) opts.servers = {};
 if (!opts.domains) opts.domains = {};
 if (!opts.hosts) opts.hosts = {};
