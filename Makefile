@@ -1,4 +1,4 @@
-DOCKER_USER=finboxio
+DOCKER_USER=christhomas
 DOCKER_IMAGE=docker-dns
 
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
