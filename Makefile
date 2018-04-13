@@ -1,4 +1,4 @@
-DOCKER_USER=christhomas
+DOCKER_USER=jenkins1.node.test.sl.tpa.io:5000/tpa
 DOCKER_IMAGE=docker-dns
 
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
