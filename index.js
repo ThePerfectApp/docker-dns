@@ -1,4 +1,4 @@
-var config = require("/usr/src/config.json");
+var config = require("/etc/config.json");
 
 // Make some values fall back to default values if they are not valid
 config.fallback_timeout = config.fallback_timeout || 350;
